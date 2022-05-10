@@ -29,6 +29,14 @@ def get_unused_vertex_and_relabel(graph: T_Graph):
     return vertex_new
 
 
+def pass_param_or_call(
+    param: Union[int, float, callable], graph: T_Graph
+) -> Union[int, float]:
+    if callable(param):
+        param = param(graph)
+    return param
+
+
 def sampler_random_uniform(candidates: Union[int, str], min: int, max: int):
     if len(candidates) == 0:
         return set()
@@ -47,15 +55,6 @@ def sampler_random_uniform(candidates: Union[int, str], min: int, max: int):
         min, np.maximum(np.minimum(max + 1, len(candidates)), min + 1)
     )
     return np.random.choice(list(candidates), size, replace=False)
-
-
-class Sampler(object):
-    def __init__(self, min: int, max: int = None):
-        self._min = min
-        self._max = max
-
-    def sample(self, candidates) -> Union[int, str]:
-        raise NotImplementedError()
 
 
 class GraphOperation(object):
@@ -92,7 +91,9 @@ class Selector(object):
 
     def forward_sample(self, graph: T_Graph) -> Union[int, str]:
         return self._sampler(
-            self.forward_suggest(graph), min=self._sample_min, max=self._sample_max
+            self.forward_suggest(graph),
+            min=pass_param_or_call(self._sample_min, graph),
+            max=pass_param_or_call(self._sample_max, graph),
         )
 
 
@@ -126,19 +127,15 @@ class VertexDegreeSelector(VertexSelector):
         self._limit = int(limit) if limit is not None else None
 
     def forward_suggest(self, graph: T_Graph) -> Set[Union[int, str]]:
+        limit = pass_param_or_call(self._limit, graph)
+        min_degree = pass_param_or_call(self._min_degree, graph)
+        max_degree = pass_param_or_call(self._max_degree, graph)
+
         degree_vertices = [
             (v, d)
             for v, d in graph.degree()
-            if (
-                self._min_degree is None
-                or self._min_degree is not None
-                and d >= self._min_degree
-            )
-            and (
-                self._max_degree is None
-                or self._max_degree is not None
-                and d <= self._max_degree
-            )
+            if (min_degree is None or min_degree is not None and d >= min_degree)
+            and (max_degree is None or max_degree is not None and d <= max_degree)
         ]
         order_vertices = [
             v
@@ -146,11 +143,16 @@ class VertexDegreeSelector(VertexSelector):
                 degree_vertices, key=lambda tup: tup[1], reverse=self._descending
             )
         ]
-        return order_vertices if self._limit is None else order_vertices[: self._limit]
+        return order_vertices if limit is None else order_vertices[:limit]
 
 
 class RandomEdgeSelector(Selector):
-    def __init__(self, min: int, max: int = None, sampler=sampler_random_uniform):
+    def __init__(
+        self,
+        min: Union[int, callable],
+        max: Union[int, callable] = None,
+        sampler=sampler_random_uniform,
+    ):
         super().__init__(sampler=sampler, min=min, max=max)
         self._sampler = sampler
         self._sample_min = min
@@ -158,8 +160,3 @@ class RandomEdgeSelector(Selector):
 
     def forward_suggest(self, graph: T_Graph) -> Set[Union[int, str]]:
         return set(graph.edges)
-
-    def forward_sample(self, graph: T_Graph) -> Union[int, str]:
-        return self._sampler(
-            self.forward_suggest(graph), min=self._sample_min, max=self._sample_max
-        )
