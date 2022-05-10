@@ -1,10 +1,14 @@
-import networkx as nx
-import numpy as np
-from typing import TypeVar, Type
-from pygarn.base import GraphOperation, get_unused_vertex, VertexSelector, RandomVertexSelector
+from typing import TypeVar
 
-T_Graph = TypeVar("T_Graph", bound=nx.Graph)
-#T_Graph = Type[nx.Graph]
+import networkx as nx
+
+from pygarn.base import GraphOperation
+from pygarn.base import RandomVertexSelector
+from pygarn.base import VertexSelector
+from pygarn.base import get_unused_vertex
+
+
+T_Graph = TypeVar("T_Graph", bound=nx.Graph)  # T_Graph = Type[nx.Graph]
 
 
 class AddConnectedVertex(GraphOperation):

@@ -40,4 +40,3 @@ test-python3.9:
 test-python3.10:
   <<: *test
   image: python:3.10
-
