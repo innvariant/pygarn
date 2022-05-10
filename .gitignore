@@ -1,0 +1,18 @@
+# Temporary files
+__pycache__/
+*~
+tests/cache/
+
+# Build files and directories
+.venv/
+src/
+build/
+*.c
+*.so
+dist/
+pygarn.egg*
+
+# IDE-specific files
+.idea/
+*.iml
+.ipynb_checkpoints/
