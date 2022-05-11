@@ -49,6 +49,7 @@ def test_add_vertex_one_by_one_copy():
 
 def test_add_vertex_one_by_one_multi_edges():
     g1 = nx.Graph()
+    g1.add_node(0)
 
     n_edges_to_add_max = 3
     n_rounds = 5
@@ -57,7 +58,7 @@ def test_add_vertex_one_by_one_multi_edges():
     for _ in range(n_rounds):
         g1 = op_add.forward(g1)
 
-    assert len(g1.nodes) == n_rounds
+    assert len(g1.nodes) == n_rounds + 1
     assert len(g1.edges) >= n_rounds
     assert len(g1.edges) <= n_rounds * n_edges_to_add_max - 1
 
