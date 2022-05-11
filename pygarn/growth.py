@@ -18,8 +18,8 @@ T_Graph = TypeVar("T_Graph", bound=nx.Graph)  # T_Graph = Type[nx.Graph]
 
 
 class AddVertex(GraphOperation):
-    def __init__(self, selector: VertexSelector = RandomVertexSelector(min=1, max=3)):
-        self._selector = selector
+    def __init__(self, connect_to: VertexSelector = RandomVertexSelector(min=1, max=3)):
+        self._selector_connect_to = connect_to
 
     def applicable(self, graph: T_Graph) -> bool:
         return True
@@ -28,7 +28,7 @@ class AddVertex(GraphOperation):
         vertex_new = get_unused_vertex_and_relabel(graph)
         targets = None
         if len(graph.nodes) > 0:
-            targets = self._selector.forward_sample(graph)
+            targets = self._selector_connect_to.forward_sample(graph)
         graph.add_node(vertex_new)
         if targets is not None:
             graph.add_edges_from([(vertex_new, t) for t in targets])
@@ -40,8 +40,8 @@ class AddVertex(GraphOperation):
             limit=None,
             min=1,
             max=1,
-            min_degree=self._selector._sample_min,
-            max_degree=self._selector._sample_max,
+            min_degree=self._selector_connect_to._sample_min,
+            max_degree=self._selector_connect_to._sample_max,
         )
         vertices = selector_degree.forward_sample(graph)
         if len(vertices) < 1:

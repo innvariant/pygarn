@@ -20,9 +20,12 @@ def test_dev():
     plt.show()
 
     for _ in range(n_rounds):
-        op_add.backward_inplace(g1)
-        nx.draw(g1)
-        plt.show()
+        try:
+            op_add.backward_inplace(g1)
+            nx.draw(g1)
+            plt.show()
+        except ValueError:
+            break
 
 
 def test_larger():

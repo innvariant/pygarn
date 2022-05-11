@@ -32,7 +32,7 @@ def test_duplication_backwards():
     print(f"Dup graph: #v={len(g_dup.nodes)}, #e={len(g_dup.edges)}")
     try:
         g_half = op_dup.backward(g_dup)
+        print(f"Half graph: #v={len(g_half.nodes)}, #e={len(g_half.edges)}")
     except ValueError:
         # TODO heuristic not well thought out
         print("Could not find half graph in time")
-    print(f"Half graph: #v={len(g_half.nodes)}, #e={len(g_half.edges)}")
