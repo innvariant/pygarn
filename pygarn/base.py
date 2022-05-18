@@ -20,13 +20,16 @@ def apply_potentially_inplace(obj, fn_inplace):
     return obj
 
 
-def get_unused_vertex_and_relabel(graph: T_Graph):
-    vertex_new = len(graph.nodes)
-    if graph.has_node(vertex_new):
+def get_unused_vertices_and_relabel(
+    graph: T_Graph, n_new_vertices: int = 1
+) -> Set[int]:
+    assert n_new_vertices > 0
+    vertex_new_lower_bound = len(graph.nodes)
+    if graph.has_node(vertex_new_lower_bound):
         nx.relabel_nodes(
             graph, {name: ix for ix, name in enumerate(graph.nodes)}, copy=False
         )
-    return vertex_new
+    return np.arange(vertex_new_lower_bound, vertex_new_lower_bound + n_new_vertices)
 
 
 def pass_param_or_call(

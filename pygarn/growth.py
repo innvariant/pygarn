@@ -10,7 +10,7 @@ from pygarn.base import GraphOperation
 from pygarn.base import RandomVertexSelector
 from pygarn.base import VertexDegreeSelector
 from pygarn.base import VertexSelector
-from pygarn.base import get_unused_vertex_and_relabel
+from pygarn.base import get_unused_vertices_and_relabel
 from pygarn.base import pass_param_or_call
 
 
@@ -25,7 +25,8 @@ class AddVertex(GraphOperation):
         return True
 
     def forward_inplace(self, graph: T_Graph) -> T_Graph:
-        vertex_new = get_unused_vertex_and_relabel(graph)
+        vertices_new = get_unused_vertices_and_relabel(graph)
+        vertex_new = vertices_new[0]
         targets = None
         if len(graph.nodes) > 0:
             targets = self._selector_connect_to.forward_sample(graph)

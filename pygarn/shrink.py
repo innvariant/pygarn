@@ -1,12 +1,15 @@
+from collections import Counter
 from typing import TypeVar
 
 import networkx as nx
+import numpy as np
+
+from sklearn.neighbors import KernelDensity
 
 from pygarn.base import GraphOperation
 from pygarn.base import RandomVertexSelector
-from pygarn.base import VertexDegreeSelector
 from pygarn.base import VertexSelector
-from pygarn.base import get_unused_vertex_and_relabel
+from pygarn.base import get_unused_vertices_and_relabel
 
 
 T_Graph = TypeVar("T_Graph", bound=nx.Graph)  # T_Graph = Type[nx.Graph]
@@ -24,19 +27,52 @@ class RemoveVertex(GraphOperation):
         graph.remove_nodes_from(vertices)
 
     def backward_inplace(self, graph: T_Graph) -> T_Graph:
-        assert len(graph.nodes) > 0
-
-        selector_degree = VertexDegreeSelector(
-            limit=None,
-            min=1,
-            max=1,
-            min_degree=self._selector_connect_to._sample_min,
-            max_degree=self._selector_connect_to._sample_max,
+        guess_n_removed_vertices = np.random.randint(
+            self._selector._sample_min, self._selector._sample_max + 1
         )
-        vertices = selector_degree.forward_sample(graph)
-        if len(vertices) < 1:
-            raise ValueError("Operation could not be applied to graph")
+        vertices_new = get_unused_vertices_and_relabel(
+            graph, n_new_vertices=guess_n_removed_vertices
+        )
+        edges_new = []
 
-        vertex_new = get_unused_vertex_and_relabel(graph)
-        graph.add_node(vertex_new)
-        # TODO add edges based on some heuristic
+        if len(graph.nodes) > 0:
+            # TODO add edges based on some heuristic
+
+            degree = [d for v, d in graph.degree()] + [1]
+            degree_counts = Counter(degree)
+            degree_max = np.max(degree)
+            degree_hist2 = np.array(
+                [degree_counts[d] for d in np.arange(1, degree_max + 1)]
+            ).reshape(-1, 1)
+            degree_hist = [
+                (d, degree_counts[d]) for d in np.arange(1, degree_max + 1)
+            ]  # explicitly enforce at least one edge
+            if len(degree_hist) < 3:
+                count_total = np.sum([c for _, c in degree_hist])
+                probs = [c / count_total for d, c in degree_hist]
+                edges_per_vertex = np.random.choice(
+                    [d for d, c in degree_hist],
+                    size=len(vertices_new),
+                    p=probs,
+                    replace=True,
+                )
+                for v, num_edges in zip(vertices_new, edges_per_vertex):
+                    targets = np.random.choice(
+                        list(set(graph.nodes) - {v}), size=num_edges, replace=False
+                    )
+                    edges_new = [(v, t) for t in targets]
+            else:
+                kde = KernelDensity(kernel="gaussian", bandwidth=0.2).fit(degree_hist2)
+                print("E[degree] =", np.mean([kde.sample() for _ in range(100)]))
+                _sampled_degree = []
+                for v in zip(vertices_new):
+                    num_edges = int(np.round(kde.sample()))
+                    _sampled_degree.append(num_edges)
+                    targets = np.random.choice(
+                        list(set(graph.nodes) - {v}), size=num_edges, replace=False
+                    )
+                    edges_new = [(v, t) for t in targets]
+                print("Edges sampled: ", ",".join([f"{d}" for d in _sampled_degree]))
+
+        graph.add_nodes_from(vertices_new)
+        graph.add_edges_from(edges_new)

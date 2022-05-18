@@ -22,6 +22,7 @@ keywords = ["graph operations", "networkx extension", "graph assembly", "graph c
 [tool.poetry.dependencies]
 python = "^3.8"
 networkx = "^2.7.1"
+scikit-learn = "^1.1.0"
 
 
 [tool.poetry.dev-dependencies]
