@@ -33,3 +33,5 @@ def test_remove_vertex_back_and_forth():
 
     for _ in range(n_rounds):
         g1 = op_remove.backward(g1)
+
+    assert len(g1.nodes) == n_vertices_initial
