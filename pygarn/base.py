@@ -127,7 +127,7 @@ class VertexDegreeSelector(VertexSelector):
         self._descending = descending
         self._min_degree = min_degree
         self._max_degree = max_degree
-        self._limit = int(limit) if limit is not None else None
+        self._limit = limit if limit is not None else None
 
     def forward_suggest(self, graph: T_Graph) -> Set[Union[int, str]]:
         limit = pass_param_or_call(self._limit, graph)

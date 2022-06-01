@@ -50,6 +50,103 @@ class AddVertex(GraphOperation):
         graph.remove_nodes_from(vertices)
 
 
+class UnfoldSubgraph(GraphOperation):
+    def __init__(
+        self,
+        vertex_selector: VertexSelector = RandomVertexSelector(min=1, max=1),
+        backward_trials: Union[int, callable] = 1000,
+        max_width: int = None,
+        max_depth: int = 3,
+    ):
+        self._selector = vertex_selector
+        self._backward_trials = backward_trials
+        self._max_width = max_width
+        self._max_depth = max_depth
+
+    def applicable(self, graph: T_Graph) -> bool:
+        return True
+
+    def forward_inplace(self, graph: T_Graph) -> T_Graph:
+        if len(graph.nodes) < 1:
+            return graph
+
+        max_width = pass_param_or_call(self._max_width, graph)
+        max_depth = pass_param_or_call(self._max_depth, graph)
+
+        roots = self._selector.forward_sample(graph)
+
+        if max_width is None and max_depth is None:
+            subgraph = graph.copy()
+            graph_new = nx.union(graph, subgraph, rename=("G", "H"))
+
+            graph_new.add_edges_from([(f"G{s}", f"H{s}") for s in roots])
+            nx.relabel_nodes(
+                graph_new,
+                {name: ix for ix, name in enumerate(graph_new.nodes)},
+                copy=False,
+            )
+            return graph_new
+
+        for root in roots:
+            subgraph = nx.Graph()
+            subgraph_cur_node = f"H{root}"
+            subgraph.add_node(subgraph_cur_node)
+            visited_in_graph = set()
+            to_visit = {root}
+            depth = 0
+            # to_visit.update(np.random.choice(neighbors, size=min(len(neighbors), max_width) if max_width is not None else len(neighbors), replace=False))
+            # subgraph.add_nodes_from([f"H{n}" for n in to_visit])
+            # subgraph.add_edges_from([(subgraph_cur_node, t) for t in to_visit])
+            while len(to_visit) > 0 and (max_depth is not None and depth < max_depth):
+                max_depth += 1
+
+                add_to_visit = set()
+                remove_visited = set()
+                for cur_node in to_visit:
+                    neighbors = list(
+                        set(nx.neighbors(graph, cur_node)) - visited_in_graph
+                    )
+                    next_to_visit = np.random.choice(
+                        neighbors,
+                        size=min(len(neighbors), max_width)
+                        if max_width is not None
+                        else len(neighbors),
+                        replace=False,
+                    )
+                    # subgraph.add_node(f"H{cur_node}")
+                    subgraph.add_edges_from(
+                        [(f"H{cur_node}", f"H{t}") for t in next_to_visit]
+                    )
+
+                    visited_in_graph.add(cur_node)
+                    remove_visited.add(cur_node)
+                    add_to_visit.update(next_to_visit)
+
+                to_visit.update(add_to_visit)
+                to_visit = to_visit - remove_visited
+
+            nx.relabel_nodes(
+                subgraph,
+                {name: ix for ix, name in enumerate(subgraph.nodes)},
+                copy=False,
+            )
+            graph_new = nx.union(graph, subgraph, rename=("G", "H"))
+            graph_new.add_edges_from([(f"G{root}", f"H{root}")])
+            nx.relabel_nodes(
+                graph_new,
+                {name: ix for ix, name in enumerate(graph_new.nodes)},
+                copy=False,
+            )
+
+            graph = graph_new
+
+        return graph
+
+    def backward_inplace(self, graph: T_Graph) -> T_Graph:
+        # TODO consider implementation
+        raise NotImplementedError("Backward not implemented for this operation, yet")
+
+
 class DuplicateGraph(GraphOperation):
     def __init__(
         self,
