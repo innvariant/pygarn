@@ -1,5 +1,6 @@
 import itertools
 
+from typing import Set
 from typing import TypeVar
 from typing import Union
 
@@ -34,7 +35,9 @@ class AddVertex(GraphOperation):
         if targets is not None:
             graph.add_edges_from([(vertex_new, t) for t in targets])
 
-    def backward_inplace(self, graph: T_Graph) -> T_Graph:
+    def backward_inplace(
+        self, graph: T_Graph, return_fuzzy: bool = False
+    ) -> Union[T_Graph, Set[T_Graph]]:
         assert len(graph.nodes) > 0
 
         selector_degree = VertexDegreeSelector(
@@ -48,6 +51,106 @@ class AddVertex(GraphOperation):
         if len(vertices) < 1:
             raise ValueError("Operation could not be applied to graph")
         graph.remove_nodes_from(vertices)
+
+
+class AddCompleteGraph(GraphOperation):
+    def __init__(
+        self,
+        size: Union[int, callable] = 3,
+        sources: VertexSelector = RandomVertexSelector(min=1, max=1),
+        targets: VertexSelector = RandomVertexSelector(min=1, max=1),
+    ):
+        self._selector_source = sources
+        self._selector_target = targets
+        self._size = size
+
+    def applicable(self, graph: T_Graph) -> bool:
+        return True
+
+    def forward_inplace(self, graph: T_Graph) -> T_Graph:
+        size = pass_param_or_call(self._size, graph)
+        assert size >= 3
+
+        graph_add = nx.complete_graph(size)
+
+        sources = self._selector_source.forward_sample(graph_add)
+
+        list_edges = []
+        for source in sources:
+            targets = self._selector_target.forward_sample(graph)
+            list_edges.extend([(f"H{source}", f"G{target}") for target in targets])
+
+        graph_new = nx.union(graph, graph_add, rename=("G", "H"))
+        graph_new.add_edges_from(list_edges)
+        nx.relabel_nodes(
+            graph_new,
+            {name: ix for ix, name in enumerate(graph_new.nodes)},
+            copy=False,
+        )
+        return graph_new
+
+    def backward_inplace(
+        self, graph: T_Graph, return_fuzzy: bool = False
+    ) -> Union[T_Graph, Set[T_Graph]]:
+        pass_param_or_call(self._selector_source._sample_min, graph)
+
+        pot_cliques = []
+        for clique in nx.enumerate_all_cliques(graph):
+            if len(clique) < 3:
+                continue
+
+            g_reduced = graph.copy()
+            g_reduced.remove_nodes_from(clique)
+            if not nx.is_connected(g_reduced):
+                continue
+
+            potential_used_size = pass_param_or_call(self._size, g_reduced)
+            if len(clique) == potential_used_size:
+                targets_external = []
+                for v in clique:
+                    targets_external.extend(
+                        [
+                            neigh
+                            for neigh in nx.neighbors(graph, v)
+                            if neigh not in clique
+                        ]
+                    )
+
+                lim_source_min = pass_param_or_call(
+                    self._selector_source._sample_min, g_reduced
+                )
+                lim_source_max = pass_param_or_call(
+                    self._selector_source._sample_max, g_reduced
+                )
+                lim_target_min = pass_param_or_call(
+                    self._selector_target._sample_min, g_reduced
+                )
+                lim_target_max = pass_param_or_call(
+                    self._selector_target._sample_max, g_reduced
+                )
+
+                if (
+                    lim_source_min * lim_target_min
+                    <= len(targets_external)
+                    <= lim_source_max * lim_target_max
+                ):
+                    pot_cliques.append(
+                        {
+                            "clique": clique,
+                            "g_reduced": g_reduced,
+                            "targets": targets_external,
+                        }
+                    )
+
+        if len(pot_cliques) > 0:
+            if return_fuzzy:
+                return {p["g_reduced"] for p in pot_cliques}
+            ix_pot_clique = np.random.randint(len(pot_cliques))
+            return pot_cliques[ix_pot_clique]["g_reduced"]
+        else:
+            raise ValueError(
+                "Could not find sub-clique which matches the config such that it might have been added to the graph."
+            )
 
 
 class UnfoldSubgraph(GraphOperation):
@@ -142,7 +245,9 @@ class UnfoldSubgraph(GraphOperation):
 
         return graph
 
-    def backward_inplace(self, graph: T_Graph) -> T_Graph:
+    def backward_inplace(
+        self, graph: T_Graph, return_fuzzy: bool = False
+    ) -> Union[T_Graph, Set[T_Graph]]:
         # TODO consider implementation
         raise NotImplementedError("Backward not implemented for this operation, yet")
 
@@ -179,7 +284,9 @@ class DuplicateGraph(GraphOperation):
 
         return graph_new
 
-    def backward_inplace(self, graph: T_Graph) -> T_Graph:
+    def backward_inplace(
+        self, graph: T_Graph, return_fuzzy: bool = False
+    ) -> Union[T_Graph, Set[T_Graph]]:
         if len(graph.nodes) % 2 != 0:
             raise ValueError(
                 "Graph must have an even number of vertices to be put backward in half."

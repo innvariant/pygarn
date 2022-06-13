@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 
+from functools import partial
 from typing import Set
 from typing import TypeVar
 from typing import Union
@@ -73,13 +74,20 @@ class GraphOperation(object):
     def forward_inplace(self, graph: T_Graph) -> T_Graph:
         raise NotImplementedError()
 
-    def backward(self, graph: T_Graph, inplace: bool = False) -> T_Graph:
+    def backward(
+        self, graph: T_Graph, inplace: bool = False, return_fuzzy: bool = False
+    ) -> Union[T_Graph, Set[T_Graph]]:
         assert graph is not None
         if not inplace:
             graph = copy.deepcopy(graph)
-        return apply_potentially_inplace(graph, self.backward_inplace)
 
-    def backward_inplace(self, graph: T_Graph) -> T_Graph:
+        return apply_potentially_inplace(
+            graph, partial(self.backward_inplace, return_fuzzy=return_fuzzy)
+        )
+
+    def backward_inplace(
+        self, graph: T_Graph, return_fuzzy: bool = False
+    ) -> Union[T_Graph, Set[T_Graph]]:
         raise NotImplementedError()
 
 
