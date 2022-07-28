@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pygarn"
-version = "0.1.0"
+version = "0.2.0"
 description = ""
 authors = [
     "Julian Stier <julian.stier@uni-passau.de>"
@@ -11,7 +11,9 @@ include = [
     "pyproject.toml",
     "README.md"
 ]
-
+exclude = [
+    "res/*.graphml"
+]
 readme = "README.md"
 
 homepage = "https://github.com/innvariant/pygarn"
@@ -43,7 +45,7 @@ lines_between_types = 1
 multi_line_output = 3
 use_parentheses = true
 filter_files = true
-src_paths = ["ctnas", "tests"]
+src_paths = ["pygarn", "tests"]
 skip_glob = ["*/setup.py", "res/", "examples/"]
 known_first_party = "pygarn"
 known_third_party = ["pytest"]
