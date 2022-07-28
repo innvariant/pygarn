@@ -1,4 +1,3 @@
-import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
 
@@ -48,8 +47,6 @@ def test_add_k5():
 
     assert g1 is not None
     assert len(g1.nodes) == n_nodes_init + k
-    nx.draw(g1)
-    plt.show()
     assert len(g1.edges) == len(list_edges_init) + int((k * (k - 1)) / 2) + 1
 
 
@@ -76,19 +73,13 @@ def test_add_kcomplete_and_reverse():
         assert len(g1.nodes) == n_nodes_init + k
         assert len(g1.edges) > n_edges_init + int((k * (k - 1)) / 2)
         assert nx.is_connected(g1)
-        nx.draw(g1)
-        plt.show()
 
         # Act again
         g_fuzzy = op_add_kcomplete.backward(g1, return_fuzzy=True)
-        nx.draw(g0)
-        plt.show()
         any_isomorphic = False
         for g2 in g_fuzzy:
             assert g2 is not None
             assert len(g2.nodes) == n_nodes_init
-            nx.draw(g2)
-            plt.show()
             any_isomorphic = any_isomorphic or nx.is_isomorphic(g2, g0)
 
         assert (
