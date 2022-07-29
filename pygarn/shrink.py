@@ -1,5 +1,7 @@
 from collections import Counter
+from typing import Set
 from typing import TypeVar
+from typing import Union
 
 import networkx as nx
 import numpy as np
@@ -24,7 +26,9 @@ class RemoveVertex(GraphOperation):
         vertices = self._selector.forward_sample(graph)
         graph.remove_nodes_from(vertices)
 
-    def backward_inplace(self, graph: T_Graph) -> T_Graph:
+    def backward_inplace(
+        self, graph: T_Graph, return_fuzzy: bool = False
+    ) -> Union[T_Graph, Set[T_Graph]]:
         guess_n_removed_vertices = np.random.randint(
             self._selector._sample_min, self._selector._sample_max + 1
         )
@@ -74,5 +78,7 @@ class VertexContraction(GraphOperation):
         # vertices = self._selector.forward_sample(graph)
         raise NotImplementedError()
 
-    def backward_inplace(self, graph: T_Graph) -> T_Graph:
+    def backward_inplace(
+        self, graph: T_Graph, return_fuzzy: bool = False
+    ) -> Union[T_Graph, Set[T_Graph]]:
         raise NotImplementedError()
