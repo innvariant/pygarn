@@ -314,7 +314,7 @@ class DuplicateGraph(GraphOperation):
             candidate_Gs = []
             candidate_Hs = []
             np.random.shuffle(graph_edges)
-            for (s, t) in graph_edges:
+            for s, t in graph_edges:
                 if s == t or v2d[s] < 2 or v2d[t] < 2:
                     continue
                 if len(candidate_Gs) == 0 and len(candidate_Hs) == 0:
