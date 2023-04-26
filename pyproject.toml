@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pygarn"
-version = "0.2.0"
+version = "0.2.0-dev"
 description = ""
 authors = [
     "Julian Stier <julian.stier@uni-passau.de>"
@@ -25,11 +25,10 @@ keywords = ["graph operations", "networkx extension", "graph assembly", "graph c
 python = "^3.8"
 networkx = "^2.7.1"
 
-
 [tool.poetry.dev-dependencies]
-black = "^22.3.0"
+black = "^22.12.0"
 pre-commit = "^2.3.0"
-pytest = "^3.0"
+pytest = "^7.1"
 mkdocs = "^1.1.2"
 matplotlib = "^3.5.1"
 seaborn = "^0.11.2"
